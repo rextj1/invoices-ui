@@ -35,6 +35,14 @@
             required
           ></v-checkbox>
 
+          <nuxt-link
+            variant="link"
+            to="forgotpassword"
+            class="bold-color-link"
+          >
+            <p style="color: #2753d7">Forgot Password?</p>
+          </nuxt-link>
+
           <v-btn
             :disabled="!valid || isBusy || !isFormValid"
             color="success"
@@ -42,7 +50,7 @@
             type="submit"
             rounded
           >
-            Submit
+            Login
             <v-progress-circular
               v-if="isBusy"
               indeterminate
