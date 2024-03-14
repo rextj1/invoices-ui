@@ -1,9 +1,9 @@
-import path from 'path'
-import fs from 'fs'
+import path from "path";
+import fs from "fs";
 import colors from "vuetify/es5/util/colors";
 
 const inProduction = process.env.NODE_ENV === "production";
-const apiRoot = process.env.APP_API_ROOT || "https://app.invoice.com";
+const apiRoot = process.env.APP_API_ROOT || "https://api.invoice.com";
 
 export default {
   ssr: false,
@@ -48,13 +48,33 @@ export default {
   ],
 
   // Modules: https://go.nuxtjs.dev/config-modules
-  modules: [],
+  modules: ["@nuxtjs/axios", "@nuxtjs/auth-next"],
+
+  axios: {
+    baseURL: apiRoot,
+    credentials: true,
+  },
+
+  auth: {
+    redirect: {
+      login: "/",
+      logout: "/auth/login",
+      home: "/",
+    },
+
+    strategies: {
+      laravelSanctum: {
+        provider: "laravel/sanctum",
+        url: apiRoot,
+      },
+    },
+  },
 
   // Vuetify module configuration: https://go.nuxtjs.dev/config-vuetify
   vuetify: {
     customVariables: ["~/assets/variables.scss"],
     theme: {
-      dark: true,
+      light: true,
       themes: {
         dark: {
           primary: colors.blue.darken2,
