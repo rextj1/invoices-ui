@@ -3,7 +3,7 @@ export const emailRules = [
   (v) => /.+@.+\..+/.test(v) || "E-mail must be valid",
 ];
 
-export const passwordRules = [
+export const registerPasswordRules = [
   (v) => !!v || "Password is required",
   (v) => (v && v.length >= 8) || "Password must be at least 8 characters long",
   (v) =>

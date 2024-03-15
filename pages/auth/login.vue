@@ -1,12 +1,14 @@
+<!-- Login.vue -->
 <template>
   <v-app>
     <v-main>
       <v-card class="centered-frame">
-        <v-form
-          ref="form"
-          v-model="valid"
-          lazy-validation
-          @submit.prevent="login"
+        <AuthAuthForm
+          :formData="form"
+          :isBusy="isBusy"
+          :valid="valid"
+          :errors="errors"
+          :handleSubmit="login"
         >
           <v-text-field
             v-model="form.email"
@@ -14,7 +16,6 @@
             label="E-mail"
             required
           ></v-text-field>
-
           <v-text-field
             v-model.trim="form.password"
             :type="showPassword ? 'text' : 'password'"
@@ -24,57 +25,39 @@
             :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
             @click:append="showPassword = !showPassword"
           ></v-text-field>
-          <div v-if="form.password && strongPassword" class="success-text">
-            Strong Password
-          </div>
 
-          <v-checkbox
-            v-model="checkbox"
-            :rules="[(v) => !!v || 'You must agree to continue!']"
-            label="stay login?"
-            required
-          ></v-checkbox>
-
-          <nuxt-link
-            variant="link"
-            to="forgotpassword"
-            class="bold-color-link"
-          >
-            <p style="color: #2753d7">Forgot Password?</p>
-          </nuxt-link>
-
-          <v-btn
-            :disabled="!valid || isBusy || !isFormValid"
-            color="success"
-            class="mr-4"
-            type="submit"
-            rounded
-          >
-            Login
-            <v-progress-circular
-              v-if="isBusy"
-              indeterminate
-              size="20"
-              color="primary"
-            ></v-progress-circular>
-          </v-btn>
-
-          <v-btn color="error" class="mr-4" rounded @click="reset">
-            Reset Form
-          </v-btn>
-        </v-form>
-
-        <v-alert v-if="errors" type="error">
-          {{ errors }}
-        </v-alert>
+          <template v-slot:buttons>
+            <v-btn
+              :disabled="!valid || isBusy || !isFormValid"
+              color="success"
+              class="mr-4"
+              type="submit"
+              rounded
+            >
+              Login
+              <v-progress-circular
+                v-if="isBusy"
+                indeterminate
+                size="20"
+                color="primary"
+              ></v-progress-circular>
+            </v-btn>
+            <v-btn color="error" class="mr-4" rounded @click="reset"
+              >Reset Form</v-btn
+            >
+          </template>
+        </AuthAuthForm>
       </v-card>
     </v-main>
   </v-app>
 </template>
 
 <script>
+import AuthAuthForm from "@/components/Auth/AuthForm.vue";
+import { emailRules } from "~/scripts/validationRules";
+
 export default {
-  layout: "auth",
+  components: { AuthAuthForm },
   data() {
     return {
       valid: true,
@@ -82,22 +65,11 @@ export default {
       form: {
         email: "",
         password: null,
-        password_confirmation: null,
       },
-      status: null,
       showPassword: false,
-      passwordRules: [
-        (v) => !!v || "Password is required",
-        (v) =>
-          (v && v.length >= 8) || "Password must be at least 8 characters long",
-      ],
-
-      emailRules: [
-        (v) => !!v || "E-mail is required",
-        (v) => /.+@.+\..+/.test(v) || "E-mail must be valid",
-      ],
+      emailRules,
+      passwordRules: [],
       errors: null,
-      checkbox: false,
     };
   },
   computed: {
@@ -106,24 +78,28 @@ export default {
         (value) => value !== null && value !== ""
       );
     },
-    strongPassword() {
-      return;
-      // return this.form.password && this.passwordRules[3](this.form.password);
-    },
   },
   methods: {
     async login() {
       this.isBusy = true;
       try {
+        // Make an HTTP POST request to your Laravel Sanctum backend's login endpoint
         await this.$auth.loginWith("laravelSanctum", { data: this.form });
         if (this.checkbox) {
           // Set cookie to keep the user logged in
           // document.cookie = "loggedIn=true; max-age=86400; path=/"; // expires in 1 day
           this.setCookie("loggedIn", "true");
         }
-        this.isBusy = false;
+
+        // Reset any previous errors
+        this.errors = null;
+
+        // Redirect the user to the dashboard or another page
+        // Example: this.$router.push('/dashboard');
       } catch (error) {
-        this.handleError(error);
+        this.handleError(error); // Handle authentication error
+      } finally {
+        this.isBusy = false; // Set isBusy to false regardless of the outcome
       }
     },
 
@@ -147,12 +123,6 @@ export default {
     setCookie(name, value) {
       const expires = "expires=Fri, 31 Dec 9999 23:59:59 GMT";
       document.cookie = name + "=" + value + ";" + expires + ";path=/";
-    },
-  },
-
-  watch: {
-    "form.password"(newVal) {
-      this.form.password_confirmation = newVal;
     },
   },
 };

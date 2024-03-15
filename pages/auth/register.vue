@@ -1,28 +1,29 @@
+<!-- Register.vue -->
 <template>
   <v-app>
     <v-main>
       <v-card class="centered-frame">
-        <v-form
-          ref="form"
-          v-model="valid"
-          lazy-validation
-          @submit.prevent="register"
+        <auth-auth-form
+          :formData="form"
+          :isBusy="isBusy"
+          :valid="valid"
+          :errors="errors"
+          :handleSubmit="register"
         >
           <v-text-field
             v-model="form.name"
-            :counter="10"
             :rules="nameRules"
             label="Name"
             required
           ></v-text-field>
-
           <v-text-field
             v-model="form.email"
+            @input="checkEmailAvailability"
             :rules="emailRules"
             label="E-mail"
             required
-            @input="checkEmailAvailability"
           ></v-text-field>
+
           <div
             v-if="emailAvailabilityStatus !== null"
             class="availability-status"
@@ -42,62 +43,57 @@
             :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
             @click:append="showPassword = !showPassword"
           ></v-text-field>
-          <div v-if="form.password && strongPassword" class="my-4 success-text">
-            Strong Password
-          </div>
 
-          <v-btn
-            :disabled="!valid || isBusy || !isFormValid"
-            color="success"
-            class="mr-4"
-            type="submit"
-            rounded
-          >
-            Register
-            <v-progress-circular
-              v-if="isBusy"
-              indeterminate
-              size="20"
-              color="primary"
-            ></v-progress-circular>
-          </v-btn>
-
-          <v-btn color="error" rounded class="mr-4" @click="reset">
-            Reset Form
-          </v-btn>
-        </v-form>
-
-        <v-card v-if="errors" color="primary" class="text-white">{{
-          errors
-        }}</v-card>
+          <template v-slot:buttons>
+            <v-btn
+              :disabled="!valid || isBusy || !isFormValid"
+              color="success"
+              class="mr-4"
+              type="submit"
+              rounded
+            >
+              Register
+              <v-progress-circular
+                v-if="isBusy"
+                indeterminate
+                size="20"
+                color="primary"
+              ></v-progress-circular>
+            </v-btn>
+            <v-btn color="error" rounded class="mr-4" @click="reset"
+              >Reset Form</v-btn
+            >
+          </template>
+        </auth-auth-form>
       </v-card>
     </v-main>
   </v-app>
 </template>
 
 <script>
-import { passwordRules, emailRules } from "~/scripts/validationRules";
+import AuthAuthForm from "@/components/Auth/AuthForm.vue";
+import { emailRules, registerPasswordRules } from "~/scripts/validationRules";
+
 export default {
+  components: { AuthAuthForm },
   data() {
     return {
-      isBusy: false,
       valid: true,
-      errors: null,
+      isBusy: false,
       form: {
         name: "",
         email: "",
         password: null,
-        password_confirmation: null,
       },
+      emailAvailabilityStatus: null,
       showPassword: false,
       nameRules: [
         (v) => !!v || "Name is required",
         (v) => (v && v.length <= 10) || "Name must be less than 10 characters",
       ],
-      passwordRules,
       emailRules,
-      emailAvailabilityStatus: null,
-      emailCheckTimeout: null,
+      passwordRules: registerPasswordRules,
+      errors: null,
     };
   },
   computed: {
@@ -106,25 +102,53 @@ export default {
         (value) => value !== null && value !== ""
       );
     },
-    strongPassword() {
-      return this.form.password && this.passwordRules[3](this.form.password);
-    },
   },
   methods: {
     async register() {
       this.isBusy = true;
       try {
+        // Make an HTTP POST request to your Laravel Sanctum backend's login endpoint
         await this.$axios.$get("/sanctum/csrf-cookie");
         await this.$axios.$post("/register", this.form);
         await this.$auth.loginWith("laravelSanctum", { data: this.form });
+
+        // Reset form and errors
+        // this.resetForm();
+        // this.errors = null;
         this.isBusy = false;
+
+        // Redirect the user to the dashboard or another page
+        // Example: this.$router.push('/dashboard');
       } catch (error) {
-        this.handleError(error);
+        this.handleError(error); // Handle authentication error
+      } finally {
+        this.isBusy = false; // Set isBusy to false regardless of the outcome
       }
     },
+
     reset() {
       this.$refs.form.reset();
     },
+    async checkEmailAvailability() {
+      if (!this.valid) {
+        this.emailAvailabilityStatus = null;
+        return;
+      }
+
+      try {
+        const response = await this.$axios.$get(
+          `/check-email?email=${this.form.email}`
+        );
+        if (response.available) {
+          this.emailAvailabilityStatus = "Email is available";
+        } else {
+          this.emailAvailabilityStatus = "Email is already taken";
+        }
+      } catch (error) {
+        console.error("Error checking email availability:", error);
+      }
+    },
+
     handleError(error) {
       if (error.response && error.response.status === 422) {
         this.handleValidationErrors(error.response.data.errors);
@@ -133,35 +157,10 @@ export default {
       }
       this.isBusy = false;
     },
+
+    // the error response from the backend
     handleValidationErrors(errors) {
       this.errors = Object.values(errors).flat().join(" ");
-    },
-    async checkEmailAvailability() {
-      clearTimeout(this.emailCheckTimeout);
-      if (!this.valid) {
-        this.emailAvailabilityStatus = null;
-        return;
-      }
-
-      this.emailCheckTimeout = setTimeout(async () => {
-        try {
-          const response = await this.$axios.$get(
-            `/check-email?email=${this.form.email}`
-          );
-          if (response.available) {
-            this.emailAvailabilityStatus = "Email is available";
-          } else {
-            this.emailAvailabilityStatus = "Email is already taken";
-          }
-        } catch (error) {
-          console.error("Error checking email availability:", error);
-        }
-      }, 500);
-    },
-  },
-  watch: {
-    "form.password"(newVal) {
-      this.form.password_confirmation = newVal;
     },
   },
 };
@@ -187,4 +186,3 @@ export default {
   }
 }
 </style>
-~/scripts/validationRules
