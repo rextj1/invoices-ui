@@ -43,6 +43,7 @@
             <p style="color: #2753d7">Forgot Password?</p>
           </nuxt-link>
 
+          
           <v-btn
             :disabled="!valid || isBusy || !isFormValid"
             color="success"
@@ -59,9 +60,13 @@
             ></v-progress-circular>
           </v-btn>
 
-          <v-btn color="error" class="mr-4" rounded @click="reset">
-            Reset Form
-          </v-btn>
+          <nuxt-link
+            variant="link"
+            to="register"
+            class="bold-color-link mr-4"
+          >
+            <p style="color: #2753d7">Sign up</p>
+          </nuxt-link>
         </v-form>
 
         <v-alert v-if="errors" type="error">

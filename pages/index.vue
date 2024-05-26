@@ -6,7 +6,7 @@ export default {
       return redirect("auth/login");
     }
 
-    return redirect({ name: "inspire" });
+    return redirect({ name: "customers" });
   },
 
   render() {

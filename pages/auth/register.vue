@@ -28,6 +28,8 @@
             class="availability-status"
             :class="{
               'success-text': emailAvailabilityStatus === 'Email is available',
+              'error-text':
+                emailAvailabilityStatus === 'Email is already taken',
             }"
           >
             {{ emailAvailabilityStatus }}
@@ -178,13 +180,17 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
 
-  .success-text {
-    color: green;
-  }
   .availability-status {
     margin-top: 8px;
     font-size: 0.8rem;
   }
+
+  .success-text {
+    color: green;
+  }
+
+  .error-text {
+    color: red;
+  }
 }
 </style>
-~/scripts/validationRules
