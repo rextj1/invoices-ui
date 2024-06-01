@@ -24,6 +24,7 @@
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
+    
     <v-app-bar :clipped-left="clipped" fixed app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
       <v-btn icon @click.stop="miniVariant = !miniVariant">
@@ -33,9 +34,9 @@
         <v-icon>mdi-application</v-icon>
       </v-btn>
       <v-btn icon @click.stop="fixed = !fixed">
-        <v-icon>mdi-minus</v-icon>
-      </v-btn>
-      <v-toolbar-title>{{ title }}</v-toolbar-title>
+        <!-- <v-icon>mdi-minus</v-icon> -->
+      </v-btn> 
+      <v-toolbar-title>Customer Invoice</v-toolbar-title>
       <v-spacer />
       <v-btn v-show="$auth.loggedIn" icon @click.stop="logout">
         logout
@@ -46,9 +47,9 @@
         <Nuxt />
       </v-container>
     </v-main>
-    <v-footer :absolute="!fixed" app>
+    <!-- <v-footer :absolute="!fixed" app>
       <span>&copy; {{ new Date().getFullYear() }}</span>
-    </v-footer>
+    </v-footer> -->
   </v-app>
 </template>
 
@@ -66,16 +67,15 @@ export default {
           title: "Welcome",
           to: "/",
         },
-        {
-          icon: "mdi-chart-bubble",
-          title: "Inspire",
-          to: "/inspire",
-        },
+        // {
+        //   icon: "mdi-chart-bubble",
+        //   title: "Inspire",
+        //   to: "/inspire",
+        // },
       ],
       miniVariant: false,
       right: true,
       rightDrawer: false,
-      title: "Vuetify.js",
     };
   },
 

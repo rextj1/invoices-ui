@@ -2,225 +2,164 @@
   <v-container>
     <v-data-table
       :headers="headers"
+      :fixed-header="true"
       :items="customers"
       :hide-default-footer="true"
       :options.sync="options"
-      :server-items-length="12"
       sort-by="customers"
       class="elevation-1"
       :loading="loading"
       :search="search"
       :custom-filter="filterOnlyCapsText"
-      :single-select="singleSelect"
-      item-key="name"
+      v-model="selected"
       show-select
+      :single-select="false"
     >
       <template v-slot:top>
-        <v-toolbar flat>
-          <template>
-            <v-switch
-              v-model="singleSelect"
-              label="Single select"
-              class="pa-3"
-            ></v-switch>
-          </template>
-          <v-toolbar-title>All Customers </v-toolbar-title>
-          <v-divider class="mx-4" inset vertical></v-divider>
-          <v-spacer></v-spacer>
-
-          <template>
-            <v-text-field
-              v-model="search"
-              label="Search..."
-              append-icon="mdi-magnify"
-              single-line
-              hide-details
-              class="mx-4"
-            ></v-text-field>
-          </template>
-          <v-dialog v-model="dialog" max-width="500px">
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on">
-                New Item
-              </v-btn>
-            </template>
-
-            <v-card>
-              <v-card-title>
-                <span class="text-h5">{{ formTitle }}</span>
-              </v-card-title>
-
-              <v-card-text>
-                <v-container>
-                  <v-row>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field
-                        v-model="editedItem.name"
-                        label="Customers Name"
-                      ></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field
-                        v-model="editedItem.email"
-                        label="Email"
-                      ></v-text-field>
-                      <template v-slot:item.email="{ item }">
-                        <v-chip :color="getColor(item.calories)" dark>
-                          {{ item.calories }}
-                        </v-chip>
-                      </template>
-                    </v-col>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field
-                        v-model="editedItem.state"
-                        label="State"
-                      ></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field
-                        v-model="editedItem.city"
-                        label="City"
-                      ></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field
-                        v-model="editedItem.postalCode"
-                        label="Postal Code"
-                      ></v-text-field>
-                    </v-col>
-
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field
-                        v-model="editedItem.type"
-                        label="Type"
-                      ></v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </v-card-text>
-
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="close">
-                  Cancel
-                </v-btn>
-                <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-
-          <v-dialog v-model="dialogDelete" max-width="500px">
-            <v-card>
-              <v-card-title class="text-h5"
-                >Are you sure you want to delete this item?</v-card-title
-              >
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="closeDelete"
-                  >Cancel</v-btn
-                >
-                <v-btn color="blue darken-1" text @click="deleteItemConfirm"
-                  >OK</v-btn
-                >
-                <v-spacer></v-spacer>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-        </v-toolbar>
+        <CustomersTableTool
+          :selected="selected"
+          @updateSearch="updateSearch"
+          @updateDeleteAll="updateDeleteAll"
+          @openDialog="openDialog"
+        />
       </template>
 
-      
       <template v-slot:item.actions="{ item }">
-        <v-icon small class="mr-2" @click="viewItem(item)"> mdi-eye </v-icon>
-        <v-icon small class="mr-2" @click="editItem(item)"> mdi-pencil </v-icon>
-        <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
+        <CustomersTableActions
+          :item="item"
+          @viewItem="viewItem"
+          @editItem="editItem"
+          @deleteItem="deleteItem"
+        />
       </template>
+
       <template v-slot:item.type="{ item }">
         <v-chip :color="getColor(item.type)" dark>
           {{ item.type }}
         </v-chip>
       </template>
-      <!-- <template v-slot:no-data>
-          <v-btn color="primary" @click="initialize"> Reset </v-btn>
-        </template> -->
     </v-data-table>
+
+    <CustomersDialog
+      :formTitle="formTitle"
+      :dialog="dialog"
+      :formFields="formFields"
+      :editedIndex="editedIndex"
+      :editedItem="editedItem"
+      @save="onCustomerSaved"
+      @close="close"
+    />
+    <CustomersDeleteDialog
+      :dialogDelete="dialogDelete"
+      :item="item"
+      @closeDelete="closeDelete"
+      @deleteItemConfirm="deleteItemConfirm"
+    />
+
+    <CustomersBulkDeleteDialog
+      :dialogBulkDelete="dialogBulkDelete"
+      :customersId="customersId"
+      @closeBulkDelete="closeBulkDelete"
+      @bulkBeleteItemConfirm="bulkBeleteItemConfirm"
+    />
+
     <div class="text-center">
-      <v-pagination
+      <Pagination
         v-if="pagination.total > 1"
-        v-model="pagination.current"
-        :length="pagination.total"
-        :total-visible="10"
-        prev-icon="mdi-menu-left"
-        next-icon="mdi-menu-right"
-        @input="onPageChange"
-        circle
-      ></v-pagination>
+        :pagination="pagination"
+        :pageVisibility="pageVisibility"
+        :disabled="loading"
+        @onPageChange="onPageChange"
+      />
     </div>
+    <CustomersViewDialog
+      :viewDialog="viewDialog"
+      :item="item"
+      @closeViewDialog="closeViewDialog"
+    />
   </v-container>
 </template>
 
 <script>
+import CustomersDialog from "@/components/Customers/Dialog";
+import CustomersDeleteDialog from "@/components/Customers/DeleteDialog";
+import CustomersBulkDeleteDialog from "@/components/Customers/BulkDeleteDialog";
+import CustomersTableActions from "@/components/Customers/TableActions";
+import CustomersTableTool from "@/components/Customers/TableTool";
+import CustomersViewDialog from "@/components/Customers/ViewDialog";
+import Pagination from "@/components/Pagination";
+
 export default {
   middleware: "auth",
   name: "customers",
-  data: () => ({
-    singleSelect: false,
-    selected: [],
-    options: {},
-    page: 1,
-    dialog: false,
-    loading: false,
-    search: "",
-    dialogDelete: false,
-    customers: [],
-    headers: [
-      {
-        text: "Name",
-        align: "start",
-        sortable: false,
-        value: "name",
+  components: {
+    CustomersDialog,
+    CustomersDeleteDialog,
+    CustomersBulkDeleteDialog,
+    CustomersTableActions,
+    CustomersTableTool,
+    CustomersViewDialog,
+    Pagination,
+  },
+  data() {
+    return {
+      selected: [],
+      options: {},
+      dialog: false,
+      viewDialog: false,
+      dialogDelete: false,
+      dialogBulkDelete: false,
+      customersId: [],
+      loading: false,
+      search: "",
+      item: {},
+      customers: [],
+      headers: [
+        { text: "Name", align: "start", sortable: false, value: "name" },
+        { text: "Email", value: "email" },
+        { text: "Address", value: "address" },
+        { text: "State", value: "state" },
+        { text: "City", value: "city" },
+        { text: "Postal Code", value: "postalCode" },
+        { text: "Type", value: "type" },
+        { text: "Actions", value: "actions", sortable: false },
+      ],
+      editedIndex: -1,
+      editedItem: {},
+      defaultItem: {
+        name: "",
+        email: "",
+        state: "",
+        city: "",
+        postalCode: "",
+        type: "",
       },
-      { text: "Email", value: "email" },
-      { text: "Address", value: "address" },
-      { text: "State", value: "state" },
-      { text: "City", value: "city" },
-      { text: "Postal Code", value: "postalCode" },
-      { text: "Type", value: "type" },
-      { text: "Actions", value: "actions", sortable: false },
-    ],
-
-    editedIndex: -1,
-    editedItem: {
-      // name: "",
-      // email: "",
-      // state: "",
-      // city: "",
-      // postalCode: "",
-      // type: "",
-    },
-    defaultItem: {
-      name: "",
-      email: "",
-      state: "",
-      city: "",
-      postalCode: "",
-      type: "",
-    },
-    pagination: {
-      current: 1,
-      total: 0,
-    },
-  }),
+      pageVisibility: 10,
+      pagination: {
+        current: 1,
+        total: 0,
+      },
+    };
+  },
   mounted() {
     this.setPageFromQuery();
-    this.getCustomers();
   },
   computed: {
     formTitle() {
       return this.editedIndex === -1 ? "New Item" : "Edit Item";
     },
+    formFields() {
+      return [
+        { model: "name", label: "Customer Name" },
+        { model: "address", label: "Address" },
+        { model: "email", label: "Email" },
+        { model: "state", label: "State" },
+        { model: "city", label: "City" },
+        { model: "postalCode", label: "Postal Code" },
+        { model: "type", label: "Type" },
+      ];
+    },
   },
-
   watch: {
     dialog(val) {
       val || this.close();
@@ -228,41 +167,37 @@ export default {
     dialogDelete(val) {
       val || this.closeDelete();
     },
+    "$route.query.page": "setPageFromQuery",
   },
-
-  // created() {
-  //   this.initialize();
-  // },
-
   methods: {
-    // initialize() {
-    //   this.customers = [];
-    // },
     getColor(type) {
-      if (type == "I" || type == "i") return "red";
-      else return "green";
+      return type === "I" || type === "i" ? "red" : "green";
+    },
+    //---- custom filter -----//
+    updateSearch(search) {
+      this.search = search;
     },
     filterOnlyCapsText(value, search, item) {
       return (
         value != null &&
         search != null &&
-        typeof value === "string" &&
-        value.toString().toLowerCase().indexOf(search.toLowerCase()) !== -1
+        value.toString().toLowerCase().includes(search.toLowerCase())
       );
-      // new RegExp(search, 'i').test(value.toString());
     },
+    //---- end custom filter -----//
 
     setPageFromQuery() {
       const page = this.$route.query.page;
-      this.pagination.current = page ? parseInt(page, 13) : 1;
+      this.pagination.current = page ? parseInt(page, 10) : 1;
+      this.getCustomers();
     },
-
     getCustomers() {
       this.loading = true;
       this.$axios
         .$get(`/api/v1/customers`, {
           params: {
             page: this.pagination.current,
+            includeInvoices: true,
           },
         })
         .then((response) => {
@@ -275,32 +210,66 @@ export default {
           this.loading = false;
         });
     },
-
     onPageChange(page) {
+      this.pagination.current = page;
       this.$router.push({ path: this.$route.path, query: { page } });
-      this.getCustomers();
     },
-
-    viewItem(item){
+    viewItem(item) {
       this.editedIndex = this.customers.indexOf(item);
-      this.dialog = true;
+      this.viewDialog = true;
+      this.item = item;
     },
-
+    closeViewDialog() {
+      this.viewDialog = false;
+      this.$nextTick(() => {
+        this.editedItem = Object.assign({}, this.defaultItem);
+        this.editedIndex = -1;
+      });
+    },
     editItem(item) {
+      this.item = item;
       this.editedIndex = this.customers.indexOf(item);
-      this.editedItem = Object.assign({}, item);
+      // this.editedItem = Object.assign({}, item);
+      this.editedItem = { ...item }; // Deep copy the item object
       this.dialog = true;
     },
-
+    onCustomerSaved(response) {
+      if (this.editedIndex > -1) {
+        // const currentId = response.id - 1;
+        // Object.assign(this.customers[currentId], response);
+        this.customers.splice(this.editedIndex, 1, response);
+      } else {
+        // Add the new customer
+        this.customers.push(response);
+      }
+      // this.getCustomers(); // Fetch the updated list
+    },
     deleteItem(item) {
       this.editedIndex = this.customers.indexOf(item);
-      this.editedItem = Object.assign({}, item);
+      // this.editedItem = Object.assign({}, item);
+      this.item = { ...item };
       this.dialogDelete = true;
     },
-
     deleteItemConfirm() {
       this.customers.splice(this.editedIndex, 1);
+      this.selected = [];
       this.closeDelete();
+    },
+
+    // bulk delete
+    updateDeleteAll() {
+      this.customersId = this.selected.map((item) => item.id);
+      this.dialogBulkDelete = true;
+    },
+    closeBulkDelete() {
+      this.dialogBulkDelete = false;
+    },
+    bulkBeleteItemConfirm() {
+      this.customers = this.customers.filter(
+        (customer) => !this.customersId.includes(customer.id)
+      );
+      this.selected = [];
+      this.closeBulkDelete();
     },
 
     close() {
@@ -310,7 +279,6 @@ export default {
         this.editedIndex = -1;
       });
     },
-
     closeDelete() {
       this.dialogDelete = false;
       this.$nextTick(() => {
@@ -318,14 +286,8 @@ export default {
         this.editedIndex = -1;
       });
     },
-
-    save() {
-      if (this.editedIndex > -1) {
-        Object.assign(this.customers[this.editedIndex], this.editedItem);
-      } else {
-        this.customers.push(this.editedItem);
-      }
-      this.close();
+    openDialog() {
+      this.dialog = true;
     },
   },
 };

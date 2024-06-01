@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <img
     class="vuetify-logo"
     alt="Vuetify Logo"
@@ -19,4 +19,4 @@
     transform: rotateY(0deg);
   }
 }
-</style>
+</style> -->
