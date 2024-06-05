@@ -24,7 +24,7 @@
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
-    
+
     <v-app-bar :clipped-left="clipped" fixed app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
       <v-btn icon @click.stop="miniVariant = !miniVariant">
@@ -35,12 +35,10 @@
       </v-btn>
       <v-btn icon @click.stop="fixed = !fixed">
         <!-- <v-icon>mdi-minus</v-icon> -->
-      </v-btn> 
-      <v-toolbar-title>Customer Invoice</v-toolbar-title>
-      <v-spacer />
-      <v-btn v-show="$auth.loggedIn" icon @click.stop="logout">
-        logout
       </v-btn>
+      <v-toolbar-title> </v-toolbar-title>
+      <v-spacer />
+      <v-btn v-show="$auth.loggedIn" icon @click.stop="logout"> logout </v-btn>
     </v-app-bar>
     <v-main>
       <v-container>
@@ -64,8 +62,13 @@ export default {
       items: [
         {
           icon: "mdi-apps",
-          title: "Welcome",
+          title: "Customers",
           to: "/",
+        },
+        {
+          icon: "mdi-apps",
+          title: "Invoices",
+          to: "/invoices",
         },
         // {
         //   icon: "mdi-chart-bubble",

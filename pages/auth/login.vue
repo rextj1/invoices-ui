@@ -43,7 +43,7 @@
             <p style="color: #2753d7">Forgot Password?</p>
           </nuxt-link>
 
-          
+          <div class="d-flex">
           <v-btn
             :disabled="!valid || isBusy || !isFormValid"
             color="success"
@@ -67,6 +67,7 @@
           >
             <p style="color: #2753d7">Sign up</p>
           </nuxt-link>
+        </div>
         </v-form>
 
         <v-alert v-if="errors" type="error">
