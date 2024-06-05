@@ -3,10 +3,9 @@
     <v-data-table
       :headers="headers"
       :fixed-header="true"
-      :items="customers"
+      :items="invoices"
       :hide-default-footer="true"
-      :options.sync="options"
-      sort-by="customers"
+      sort-by="invoices"
       class="elevation-1"
       :loading="loading"
       :search="search"
@@ -19,8 +18,8 @@
         <TableTool
           :selected="selected"
           @updateSearch="updateSearch"
-          @updateDeleteAll="updateDeleteAll"
           @openDialog="openDialog"
+          @editItem="editItem"
         />
       </template>
 
@@ -32,35 +31,15 @@
           @deleteItem="deleteItem"
         />
       </template>
-
-      <template v-slot:item.type="{ item }">
-        <v-chip :color="getColor(item.type)" dark>
-          {{ item.type }}
-        </v-chip>
-      </template>
     </v-data-table>
 
-    <CustomersDialog
+    <InvoicesDialog
+      v-if="dialog"
       :formTitle="formTitle"
       :dialog="dialog"
-      :formFields="formFields"
       :editedIndex="editedIndex"
       :editedItem="editedItem"
-      @save="onCustomerSaved"
       @close="close"
-    />
-    <CustomersDeleteDialog
-      :dialogDelete="dialogDelete"
-      :item="item"
-      @closeDelete="closeDelete"
-      @deleteItemConfirm="deleteItemConfirm"
-    />
-
-    <CustomersBulkDeleteDialog
-      :dialogBulkDelete="dialogBulkDelete"
-      :customersId="customersId"
-      @closeBulkDelete="closeBulkDelete"
-      @bulkBeleteItemConfirm="bulkBeleteItemConfirm"
     />
 
     <div class="text-center">
@@ -72,7 +51,9 @@
         @onPageChange="onPageChange"
       />
     </div>
-    <CustomersViewDialog
+
+    <InvoicesViewDialog
+      v-if="viewDialog"
       :viewDialog="viewDialog"
       :item="item"
       @closeViewDialog="closeViewDialog"
@@ -81,76 +62,57 @@
 </template>
 
 <script>
-import CustomersDialog from "@/components/Customers/Dialog";
-import CustomersDeleteDialog from "@/components/Customers/DeleteDialog";
-import CustomersBulkDeleteDialog from "@/components/Customers/BulkDeleteDialog";
-import CustomersViewDialog from "@/components/Customers/ViewDialog";
 import TableActions from "@/components/TableActions";
+import InvoicesViewDialog from "@/components/Invoices/ViewDialog";
 import TableTool from "@/components/TableTool";
+import InvoicesDialog from "@/components/Invoices/Dialog";
 import Pagination from "@/components/Pagination";
 
 export default {
-  middleware: "auth",
-  name: "customers",
-  data() {
-    return {
-      selected: [],
-      options: {},
-      dialog: false,
-      viewDialog: false,
-      dialogDelete: false,
-      dialogBulkDelete: false,
-      customersId: [],
-      loading: false,
-      search: "",
-      item: {},
-      customers: [],
-      headers: [
-        { text: "Name", align: "start", sortable: false, value: "name" },
-        { text: "Email", value: "email" },
-        { text: "Address", value: "address" },
-        { text: "State", value: "state" },
-        { text: "City", value: "city" },
-        { text: "Postal Code", value: "postalCode" },
-        { text: "Type", value: "type" },
-        { text: "Actions", value: "actions", sortable: false },
-      ],
-      editedIndex: -1,
-      editedItem: {},
-      defaultItem: {
-        name: "",
-        email: "",
-        state: "",
-        city: "",
-        postalCode: "",
-        type: "",
+  data: () => ({
+    dialog: false,
+    loading: false,
+    viewDialog: false,
+    dialogDelete: false,
+    item: {},
+    selected: [],
+    search: "",
+    headers: [
+      {
+        text: "customer Id",
+        align: "start",
+        sortable: false,
+        value: "customer.name",
       },
-      pageVisibility: 10,
-      pagination: {
-        current: 1,
-        total: 0,
-      },
-    };
-  },
-  mounted() {
-    this.setPageFromQuery();
-  },
+      { text: "Amount", value: "amount" },
+      { text: "Status", value: "status" },
+      { text: "Billed Date", value: "billedDate" },
+      { text: "Paid Date", value: "paidDate" },
+      { text: "Actions", value: "actions", sortable: false },
+    ],
+    invoices: [],
+    editedIndex: -1,
+    editedItem: {
+      customer: null,
+      amount: null,
+      status: null,
+      billedDate: null,
+      paidDate: null,
+    },
+    defaultItem: {},
+    pageVisibility: 10,
+    pagination: {
+      current: 1,
+      total: 0,
+    },
+  }),
+
   computed: {
     formTitle() {
       return this.editedIndex === -1 ? "New Item" : "Edit Item";
     },
-    formFields() {
-      return [
-        { model: "name", label: "Customer Name" },
-        { model: "address", label: "Address" },
-        { model: "email", label: "Email" },
-        { model: "state", label: "State" },
-        { model: "city", label: "City" },
-        { model: "postalCode", label: "Postal Code" },
-        { model: "type", label: "Type" },
-      ];
-    },
   },
+
   watch: {
     dialog(val) {
       val || this.close();
@@ -160,10 +122,11 @@ export default {
     },
     "$route.query.page": "setPageFromQuery",
   },
+
+  mounted() {
+    this.setPageFromQuery();
+  },
   methods: {
-    getColor(type) {
-      return type === "I" || type === "i" ? "red" : "green";
-    },
     //---- custom filter -----//
     updateSearch(search) {
       this.search = search;
@@ -180,19 +143,19 @@ export default {
     setPageFromQuery() {
       const page = this.$route.query.page;
       this.pagination.current = page ? parseInt(page, 10) : 1;
-      this.getCustomers();
+      this.getInvoices();
     },
-    getCustomers() {
+    getInvoices() {
       this.loading = true;
       this.$axios
-        .$get(`/api/v1/customers`, {
+        .$get(`/api/v1/invoices`, {
           params: {
             page: this.pagination.current,
-            includeInvoices: true,
+            // includeInvoices: true,
           },
         })
         .then((response) => {
-          this.customers = response.data;
+          this.invoices = response.data;
           this.pagination.current = response.meta.current_page;
           this.pagination.total = response.meta.last_page;
           this.loading = false;
@@ -206,7 +169,7 @@ export default {
       this.$router.push({ path: this.$route.path, query: { page } });
     },
     viewItem(item) {
-      this.editedIndex = this.customers.indexOf(item);
+      this.editedIndex = this.invoices.indexOf(item);
       this.viewDialog = true;
       this.item = item;
     },
@@ -219,48 +182,22 @@ export default {
     },
     editItem(item) {
       this.item = item;
-      this.editedIndex = this.customers.indexOf(item);
+      this.editedIndex = this.invoices.indexOf(item);
       // this.editedItem = Object.assign({}, item);
       this.editedItem = { ...item }; // Deep copy the item object
       this.dialog = true;
     },
-    onCustomerSaved(response) {
-      if (this.editedIndex > -1) {
-        // const currentId = response.id - 1;
-        // Object.assign(this.customers[currentId], response);
-        this.customers.splice(this.editedIndex, 1, response);
-      } else {
-        // Add the new customer
-        this.customers.push(response);
-      }
-      // this.getCustomers(); // Fetch the updated list
-    },
+
     deleteItem(item) {
-      this.editedIndex = this.customers.indexOf(item);
+      this.editedIndex = this.invoices.indexOf(item);
       // this.editedItem = Object.assign({}, item);
       this.item = { ...item };
       this.dialogDelete = true;
     },
-    deleteItemConfirm() {
-      this.customers.splice(this.editedIndex, 1);
-      this.selected = [];
-      this.closeDelete();
-    },
 
-    // bulk delete
-    updateDeleteAll() {
-      this.customersId = this.selected.map((item) => item.id);
-      this.dialogBulkDelete = true;
-    },
-    closeBulkDelete() {
-      this.dialogBulkDelete = false;
-    },
-    bulkBeleteItemConfirm() {
-      this.customers = this.customers.filter(
-        (customer) => !this.customersId.includes(customer.id)
-      );
-      this.selected = [];
-      this.closeBulkDelete();
+    deleteItemConfirm() {
+      this.desserts.splice(this.editedIndex, 1);
+      this.closeDelete();
     },
 
     close() {
@@ -270,12 +207,22 @@ export default {
         this.editedIndex = -1;
       });
     },
+
     closeDelete() {
       this.dialogDelete = false;
       this.$nextTick(() => {
         this.editedItem = Object.assign({}, this.defaultItem);
         this.editedIndex = -1;
       });
+    },
+
+    save() {
+      if (this.editedIndex > -1) {
+        Object.assign(this.desserts[this.editedIndex], this.editedItem);
+      } else {
+        this.desserts.push(this.editedItem);
+      }
+      this.close();
     },
     openDialog() {
       this.dialog = true;
