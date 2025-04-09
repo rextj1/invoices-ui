@@ -124,6 +124,8 @@ export default {
         this.handleError(error);
       }
     },
+
+    // reset form
     reset() {
       this.$refs.form.reset();
     },

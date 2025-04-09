@@ -1,20 +1,13 @@
-import path from "path";
-import fs from "fs";
 import colors from "vuetify/es5/util/colors";
 
 const inProduction = process.env.NODE_ENV === "production";
-const apiRoot = process.env.APP_API_ROOT || "https://api.invoice.com";
+const host = inProduction ? '127.0.0.1' : `app.invoice.test`
+const apiRoot = process.env.APP_API_ROOT || "http://api.invoice.test";
 
 export default {
   ssr: false,
-  server: {
-    proxy: apiRoot,
-    https: inProduction
-      ? false
-      : {
-          key: fs.readFileSync(path.resolve(__dirname, "certs/server.key")),
-          cert: fs.readFileSync(path.resolve(__dirname, "certs/server.crt")),
-        },
+  server: {  
+  host,
   },
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
@@ -44,7 +37,7 @@ export default {
   // Modules for dev and build (recommended): https://go.nuxtjs.dev/config-modules
   buildModules: [
     // https://go.nuxtjs.dev/vuetify
-    "@nuxtjs/vuetify",
+    "@nuxtjs/vuetify", "@nuxtjs/composition-api/module"
   ],
 
   // Modules: https://go.nuxtjs.dev/config-modules
@@ -52,7 +45,7 @@ export default {
 
   axios: {
     baseURL: apiRoot,
-    credentials: true,
+    credentials: true
   },
 
   auth: {

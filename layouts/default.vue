@@ -53,6 +53,11 @@
 
 <script>
 export default {
+  // head: {
+  //   link: [
+  //     { rel: "preload", href: "/_nuxt/app.hot-update.js", as: "script" }
+  //   ]
+  // },
   name: "DefaultLayout",
   data() {
     return {
@@ -70,11 +75,16 @@ export default {
           title: "Invoices",
           to: "/invoices",
         },
-        // {
-        //   icon: "mdi-chart-bubble",
-        //   title: "Inspire",
-        //   to: "/inspire",
-        // },
+        {
+          icon: "mdi-chart-bubble",
+          title: "Media",
+          to: "/media",
+        },
+        {
+          icon: "mdi-chart-bubble",
+          title: "Upload",
+          to: "/upload",
+        },
       ],
       miniVariant: false,
       right: true,
